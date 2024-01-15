@@ -118,11 +118,12 @@ def execute_experiment(seed, input_dimension, output_dimension, sample_size, mod
     
             optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)
     
-            # Add the first point as the evaluation of the untrained model in train and test sets
-            train_losses = [test(train_loader, model, loss_fn, device, verbose=True)]
+            print('Freshly initialized model')
+            train_losses = [test(train_loader, model, loss_fn, device)]
             test_losses = [test(test_loader, model, loss_fn, device, verbose=True)]
             
             for epoch in range(1, epochs + 1):
+                print(f'Epoch {epoch}')
                 train_loss = train(train_loader, model, loss_fn, optimizer, device, verbose=True)
                 test_loss = test(test_loader, model, loss_fn, device, verbose=True)
     
