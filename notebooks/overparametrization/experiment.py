@@ -1,30 +1,16 @@
 import os, sys, time, numpy, torch
 
-sys.path.append(os.path.abspath(os.path.join('..')))  # Allows utils to be imported
+sys.path.append(os.path.abspath(os.path.join('..')))  # Allow repository modules to be imported
 
 from utils.optimization import initialize, train, test
+from settings.two_layer_teacher_network import fresh_dataset_dataloader
 
-EXPERIMENT_NAME_PARAMETERS = ['seed', 'input_dimension', 'output_dimension', 'sample_size', 
-                                      'batch_size', 'epochs', 'learning_rate']
+EXPERIMENT_NAME_PARAMETERS = ['seed', 'input_dimension', 'output_dimension', 'sample_size', 'batch_size', 
+                              'epochs', 'learning_rate']
 MODEL_NAME_PARAMETERS = EXPERIMENT_NAME_PARAMETERS + ['overparametrization', 'run']                                      
 
-def fresh_dataset_dataloader(input_dimension, sample_size, batch_size, output_weights):
-    X = numpy.random.normal(size=(sample_size, input_dimension))
-    y = numpy.matmul(X * (X > 0), output_weights)
-    
-    with torch.no_grad():
-        tensor_X = torch.Tensor(X)
-        tensor_y = torch.Tensor(y).unsqueeze(1)
-
-    dataset = torch.utils.data.TensorDataset(tensor_X, tensor_y)
-    dataloader = torch.utils.data.DataLoader(dataset, batch_size)
-    
-    return dataloader
-
 def assertion(input_dimension, output_dimension, sample_size, batch_size, device):
-    true_output_weights = numpy.random.choice([-1, 1], input_dimension)
-
-    dataloader = fresh_dataset_dataloader(input_dimension, sample_size, batch_size, true_output_weights)
+    dataloader, true_output_weights = fresh_dataset_dataloader(input_dimension, sample_size, batch_size)
     model = OverparametrizationTwoLayerNeuralNet(input_dimension, output_dimension, overparametrization=1).to(device)
     loss_fn = torch.nn.MSELoss()
     
@@ -42,8 +28,9 @@ def execute_experiment(seed, input_dimension, output_dimension, sample_size, bat
                        plot_results=False, plot_results_on_canvas=None, verbose=False):
     device = initialize(seed)
     assertion(input_dimension, output_dimension, sample_size, batch_size, device)
-    
-    true_output_weights = numpy.random.choice([-1, 1], input_dimension)
+            
+    train_loader, true_output_weights = fresh_dataset_dataloader(input_dimension, sample_size, batch_size)
+    test_loader = fresh_dataset_dataloader(input_dimension, sample_size, batch_size, true_output_weights)
     
     experiment = {
         'seed': seed,
@@ -59,8 +46,8 @@ def execute_experiment(seed, input_dimension, output_dimension, sample_size, bat
         'models_runs': []
     }
 
-    if save_models_path is not None: from utils.persistance import save_model, file_path_from_parameters
-    if save_experiments_path is not None: from utils.persistance import save_experiment, file_path_from_parameters
+    if save_models_path is not None: from utils.persistance import save_model
+    if save_experiments_path is not None: from utils.persistance import save_experiment
     if plot_results or plot_results_on_canvas: from utils.plotting import plot_experiment
     
     for overparametrization in models_overparametrizations:
@@ -69,9 +56,7 @@ def execute_experiment(seed, input_dimension, output_dimension, sample_size, bat
         model_runs = []
         for run_number in range(runs_per_model):
             if verbose: print(f'Run {run_number}')
-                
-            train_loader = fresh_dataset_dataloader(input_dimension, sample_size, batch_size, true_output_weights)
-            test_loader = fresh_dataset_dataloader(input_dimension, sample_size, batch_size, true_output_weights)
+
             model = OverparametrizationTwoLayerNeuralNet(overparametrization=overparametrization, **experiment).to(device)
             loss_fn = torch.nn.MSELoss()
             optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)
