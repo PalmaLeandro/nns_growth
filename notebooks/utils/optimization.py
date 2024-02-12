@@ -50,3 +50,13 @@ def test(dataloader, model, loss_fn, device, verbose=False):
         print(f"Test Avg loss: {test_loss:>8f}\n")
         
     return test_loss
+
+def Accuracy(pred, label): 
+    "https://stackoverflow.com/questions/51503851/calculate-the-accuracy-every-epoch-in-pytorch/63271002#63271002"
+    if len(pred.shape) == 1 or pred.size(1) == 1:
+        # Binary classification
+        return ((torch.sign(pred) + 1.) * 0.5  == label).sum() / pred.size(0)
+    
+    else:
+        # Multiclass classification
+        return (torch.argmax(pred, dim=1) == label).sum() / pred.size(0)

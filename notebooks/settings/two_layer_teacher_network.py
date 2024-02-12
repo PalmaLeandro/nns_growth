@@ -9,8 +9,7 @@ import numpy, torch
 def sample_output_weights(input_dimension):
     return numpy.random.choice([-1, 1], input_dimension)
 
-
-def fresh_dataset_dataloader(input_dimension, sample_size, batch_size, output_weights=None):
+def get_dataloader(input_dimension, sample_size, batch_size, output_weights=None, *args, **kwargs):
     true_output_weights = sample_output_weights(input_dimension) if output_weights is None else output_weights
 
     X = numpy.random.normal(size=(sample_size, input_dimension))
@@ -21,6 +20,6 @@ def fresh_dataset_dataloader(input_dimension, sample_size, batch_size, output_we
         tensor_y = torch.Tensor(y).unsqueeze(1)
 
     dataset = torch.utils.data.TensorDataset(tensor_X, tensor_y)
-    dataloader = torch.utils.data.DataLoader(dataset, batch_size)
+    dataloader = torch.utils.data.DataLoader(dataset, batch_size, shuffle=True)
     
     return (dataloader, true_output_weights) if output_weights is None else dataloader
